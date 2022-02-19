@@ -4,7 +4,6 @@ import java.util.*;
 
 import com.books.integrate.spring.react.model.Tutorial;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -59,12 +58,36 @@ public class TutorialController {
 		}
 	}
 
+	/**
+	 *Obtener (GET)el curso por el nombre
+	 * @param title Es el Titulo del curso
+	 * @return los valores del tutotial que coincide con el titulo
+	 */
+	@GetMapping(path = "tutorials/titles/{title}")
+	public ResponseEntity<Tutorial> getTutorialByTitle(@PathVariable("title") String title) {
+		Optional<Tutorial> tutorialData = tutorialRepository.findByTitle(title);
+
+		if (tutorialData.isPresent()) {
+			return new ResponseEntity<>(tutorialData.get(), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+
+	@GetMapping(path = "tutorials/price/{price}") //NO FUNCIONA
+	public ResponseEntity<Tutorial> getTutorialByprice(@PathVariable("price") int price) {
+		Optional<Tutorial> tutorialData = tutorialRepository.findByPrice(price);
+		if (tutorialData.isPresent()) {
+			return new ResponseEntity<>(tutorialData.get(), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
 
 	@PostMapping("/tutorials")
 	public ResponseEntity<Tutorial> createTutorial(@RequestBody Tutorial tutorial) {
 		try {
-			Tutorial _tutorial = tutorialRepository
-					.save(new Tutorial(tutorial.getTitle(), tutorial.getDescription(),  false));
+			Tutorial _tutorial = tutorialRepository.save(new Tutorial(tutorial.getTitle(), tutorial.getDescription(), false, tutorial.getPrice()));
 			return new ResponseEntity<>(_tutorial, HttpStatus.CREATED);
 		} catch (Exception e) {
 			return new ResponseEntity<>(null, HttpStatus.EXPECTATION_FAILED);
@@ -80,14 +103,31 @@ public class TutorialController {
 			_tutorial.setTitle(tutorial.getTitle());
 			_tutorial.setDescription(tutorial.getDescription());
 			_tutorial.setPublished(tutorial.isPublished());
+			_tutorial.setPrice(tutorial.getPrice());
 			return new ResponseEntity<>(tutorialRepository.save(_tutorial), HttpStatus.OK);
 		} else {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 
-//HttpStatus
+	@PutMapping("tutorials/titles/{title}") //FUNCIONA
+	public ResponseEntity<Tutorial> updateTutorialForTitle(@PathVariable("title") String title, @RequestBody Tutorial tutorial) {
+		Optional<Tutorial> tutorialData = tutorialRepository.findByTitle(title);
 
+		if (tutorialData.isPresent()) {
+			Tutorial _tutorial = tutorialData.get();
+			_tutorial.setTitle(tutorial.getTitle());
+			_tutorial.setDescription(tutorial.getDescription());
+			_tutorial.setPublished(tutorial.isPublished());
+			_tutorial.setPrice(tutorial.getPrice());
+			return new ResponseEntity<>(tutorialRepository.save(_tutorial), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+
+
+	//HttpStatus
 	@DeleteMapping("/tutorials/{id}")
 	public ResponseEntity<String> deleteTutorial(@PathVariable("id") long id) {
 		try {
@@ -97,7 +137,6 @@ public class TutorialController {
 			return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
 		}
 	}
-
 
 	@DeleteMapping("/tutorials")
 	public ResponseEntity<HttpStatus> deleteAllTutorials() {
@@ -109,6 +148,23 @@ public class TutorialController {
 		}
 
 	}
+
+	/**
+	 * Metodo para eliminar tutorial por titulo
+	 * @param title titulo del tutorial a eliminar
+	 * @return NO_CONTENT
+	 */
+	@DeleteMapping("/tutorials/titles/{title}") //FUNCIONA
+	public ResponseEntity<String> deleteTutorialForTitle(@PathVariable("title") String title) {
+		try {
+			Optional<Tutorial> tutorialData =tutorialRepository.findByTitle(title);
+			tutorialRepository.deleteById(tutorialData.get().getId());
+			return new ResponseEntity<>("Tutorials DELETE!! ", HttpStatus.NO_CONTENT);
+		} catch (Exception e) {
+			return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+		}
+	}
+
 
 	@GetMapping("/tutorials/published")
 	public ResponseEntity<List<Tutorial>> findByPublished() {
